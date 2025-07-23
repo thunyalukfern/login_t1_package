@@ -67,6 +67,9 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
         titleTextStyle: widget.titleAppbarStyle,
         backgroundColor: Colors.white,
         leading: SizedBox.shrink(),
+        elevation: 0, // ปิดเงาแนวนอน
+        shadowColor: Colors.transparent, // ไม่ให้มีสีเงา
+        surfaceTintColor: Colors.transparent, // ปิดเงาใน Material 3
         centerTitle: true,
         actions: [
           IconButton(
@@ -77,6 +80,7 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
           ),
         ],
       ),
+
       body: WebViewWidget(controller: _controller),
     );
   }
