@@ -62,26 +62,28 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.titleAppbarStyle ?? ''}'),
-        titleTextStyle: widget.titleAppbarStyle,
-        backgroundColor: Colors.white,
-        leading: SizedBox.shrink(),
-        elevation: 0, // ปิดเงาแนวนอน
-        shadowColor: Colors.transparent, // ไม่ให้มีสีเงา
-        surfaceTintColor: Colors.transparent, // ปิดเงาใน Material 3
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.black),
-            onPressed: () {
-              Navigator.pop(context); // ปิดหน้านี้
-            },
-          ),
-        ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            WebViewWidget(controller: _controller),
+            Positioned(
+              top: 15,
+              right: 15,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                child: SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: Icon(Icons.close, color: Colors.black),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-
-      body: WebViewWidget(controller: _controller),
     );
   }
 }
