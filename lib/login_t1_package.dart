@@ -6,6 +6,8 @@ class LoginT1Service {
     required String authorizationUrl,
     required String redirectUri,
     required BuildContext context,
+    String? titleAppbar,
+    TextStyle? titleAppbarStyle,
   }) async {
     var result = await Navigator.push(
       context,
@@ -13,6 +15,8 @@ class LoginT1Service {
         builder: (context) => LoginT1ServiceView(
           authorizationUrl: authorizationUrl,
           redirectUri: redirectUri,
+          titleAppbar: titleAppbar,
+          titleAppbarStyle: titleAppbarStyle,
         ),
       ),
     );
