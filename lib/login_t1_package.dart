@@ -8,6 +8,8 @@ class LoginT1Service {
     required BuildContext context,
     String? titleAppbar,
     TextStyle? titleAppbarStyle,
+    Widget? loadingWidget,
+    Color? loadingColor,
   }) async {
     var result = await Navigator.push(
       context,
@@ -31,11 +33,15 @@ class LoginT1ServiceView extends StatefulWidget {
     required this.redirectUri,
     this.titleAppbar,
     this.titleAppbarStyle,
+    this.loadingColor,
+    this.loadingWidget,
   });
   final String authorizationUrl;
   final String redirectUri;
   final String? titleAppbar;
   final TextStyle? titleAppbarStyle;
+  final Widget? loadingWidget;
+  final Color? loadingColor;
 
   @override
   State<LoginT1ServiceView> createState() => _LoginT1ServiceViewState();
@@ -43,6 +49,7 @@ class LoginT1ServiceView extends StatefulWidget {
 
 class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
   late final WebViewController _controller;
+  bool isLoading = true; // 👈 เพิ่ม state loading
 
   @override
   void initState() {
@@ -50,6 +57,16 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
     _controller = WebViewController()
       ..setNavigationDelegate(
         NavigationDelegate(
+          onPageStarted: (url) {
+            setState(() {
+              isLoading = true;
+            });
+          },
+          onPageFinished: (url) {
+            setState(() {
+              isLoading = false;
+            });
+          },
           onNavigationRequest: (request) {
             final url = request.url;
             if (url.startsWith(widget.redirectUri)) {
@@ -68,25 +85,33 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Stack(
-          children: [
-            WebViewWidget(controller: _controller),
-            Positioned(
-              top: 15,
-              right: 15,
-              child: InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                },
-                child: SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: Icon(Icons.close, color: Colors.black),
-                ),
+        child: isLoading == true
+            ? Center(
+                child:
+                    widget.loadingWidget ??
+                    CircularProgressIndicator(
+                      color: widget.loadingColor ?? Colors.black,
+                    ),
+              )
+            : Stack(
+                children: [
+                  WebViewWidget(controller: _controller),
+                  Positioned(
+                    top: 15,
+                    right: 15,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: Icon(Icons.close, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
