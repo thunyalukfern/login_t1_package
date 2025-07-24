@@ -19,6 +19,8 @@ class LoginT1Service {
           redirectUri: redirectUri,
           titleAppbar: titleAppbar,
           titleAppbarStyle: titleAppbarStyle,
+          loadingColor: loadingColor,
+          loadingWidget: loadingWidget,
         ),
       ),
     );
