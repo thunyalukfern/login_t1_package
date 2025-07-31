@@ -1,7 +1,7 @@
 name: login_t1_package
 description: "A new Flutter package project."
 version: 1.0.2
-homepage:
+homepage: https://github.com/thunyalukfern/login_t1_package.git
 
 environment:
   sdk: ^3.8.1

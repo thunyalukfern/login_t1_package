@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 class LoginT1Service {
   static Future<String?> webAuthT1({
@@ -56,6 +57,12 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
   @override
   void initState() {
     super.initState();
+
+    if (_controller.platform is AndroidWebViewController) {
+      AndroidWebViewController.enableDebugging(true);
+      (_controller.platform as AndroidWebViewController)
+          .setMediaPlaybackRequiresUserGesture(false);
+    }
     _controller = WebViewController()
       ..setNavigationDelegate(
         NavigationDelegate(
