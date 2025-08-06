@@ -65,7 +65,8 @@ class LoginT1ServiceView extends StatefulWidget {
 
 class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
   late final WebViewController _controller;
-  bool isLoading = true; // 👈 เพิ่ม state loading
+  bool isLoading = false;
+  final ValueNotifier<bool> _loadingNotifier = ValueNotifier(true);
 
   @override
   void initState() {
@@ -76,14 +77,10 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (url) {
-            setState(() {
-              isLoading = true;
-            });
+            _loadingNotifier.value = true;
           },
           onPageFinished: (url) {
-            setState(() {
-              isLoading = false;
-            });
+            _loadingNotifier.value = false;
           },
           onNavigationRequest: (request) {
             final url = request.url;
@@ -105,33 +102,44 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         maintainBottomViewPadding: false,
-        child: isLoading == true
-            ? Center(
-                child:
-                    widget.loadingWidget ??
-                    CircularProgressIndicator(
-                      color: widget.loadingColor ?? Colors.black,
-                    ),
-              )
-            : Stack(
-                children: [
-                  WebViewWidget(controller: _controller),
-                  Positioned(
-                    top: 15,
-                    right: 15,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: Icon(Icons.close, color: Colors.black),
-                      ),
-                    ),
-                  ),
-                ],
+        child: Stack(
+          children: [
+            WebViewWidget(controller: _controller),
+            Positioned(
+              top: 15,
+              right: 15,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                child: SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: Icon(Icons.close, color: Colors.black),
+                ),
               ),
+            ),
+            ValueListenableBuilder<bool>(
+              valueListenable: _loadingNotifier,
+              builder: (context, isLoading, _) {
+                if (!isLoading) return const SizedBox.shrink();
+                return Positioned.fill(
+                  child: Container(
+                    color: Colors.white,
+                    alignment: Alignment.center,
+                    child:
+                        widget.loadingWidget ??
+                        Image.asset(
+                          'assets/images/loading/Add-to-cart-200x-gif.gif',
+                          width: 65,
+                          height: 65,
+                        ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
