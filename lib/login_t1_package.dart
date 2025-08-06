@@ -10,20 +10,34 @@ class LoginT1Service {
     TextStyle? titleAppbarStyle,
     Widget? loadingWidget,
     Color? loadingColor,
+    bool? isRoot,
   }) async {
-    var result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LoginT1ServiceView(
-          authorizationUrl: authorizationUrl,
-          redirectUri: redirectUri,
-          titleAppbar: titleAppbar,
-          titleAppbarStyle: titleAppbarStyle,
-          loadingColor: loadingColor,
-          loadingWidget: loadingWidget,
-        ),
-      ),
-    );
+    var result = isRoot == true
+        ? await Navigator.of(context, rootNavigator: isRoot ?? false).push(
+            MaterialPageRoute(
+              builder: (context) => LoginT1ServiceView(
+                authorizationUrl: authorizationUrl,
+                redirectUri: redirectUri,
+                titleAppbar: titleAppbar,
+                titleAppbarStyle: titleAppbarStyle,
+                loadingColor: loadingColor,
+                loadingWidget: loadingWidget,
+              ),
+            ),
+          )
+        : await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LoginT1ServiceView(
+                authorizationUrl: authorizationUrl,
+                redirectUri: redirectUri,
+                titleAppbar: titleAppbar,
+                titleAppbarStyle: titleAppbarStyle,
+                loadingColor: loadingColor,
+                loadingWidget: loadingWidget,
+              ),
+            ),
+          );
     return result;
   }
 }
@@ -88,6 +102,7 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: isLoading == true
             ? Center(
