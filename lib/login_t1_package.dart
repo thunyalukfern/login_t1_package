@@ -129,10 +129,8 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
                     alignment: Alignment.center,
                     child:
                         widget.loadingWidget ??
-                        Image.asset(
-                          'assets/images/loading/Add-to-cart-200x-gif.gif',
-                          width: 65,
-                          height: 65,
+                        CircularProgressIndicator(
+                          color: widget.loadingColor ?? Colors.black,
                         ),
                   ),
                 );
