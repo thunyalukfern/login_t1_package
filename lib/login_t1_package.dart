@@ -103,7 +103,9 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
     return Scaffold(
       backgroundColor: Colors.white,
       resizeToAvoidBottomInset: false,
-      body: SafeArea(
+      body: MediaQuery.removeViewInsets(
+        removeBottom: true,
+        context: context,
         child: isLoading == true
             ? Center(
                 child:
