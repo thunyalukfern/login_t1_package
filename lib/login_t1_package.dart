@@ -102,7 +102,7 @@ class _LoginT1ServiceViewState extends State<LoginT1ServiceView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: isLoading == true
             ? Center(
