@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:login_t1_package/view.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class LoginT1Service {
@@ -15,7 +16,7 @@ class LoginT1Service {
     var result = isRoot == true
         ? await Navigator.of(context, rootNavigator: isRoot ?? false).push(
             MaterialPageRoute(
-              builder: (context) => LoginT1ServiceView(
+              builder: (context) => LoginThe1Screen(
                 authorizationUrl: authorizationUrl,
                 redirectUri: redirectUri,
                 titleAppbar: titleAppbar,
@@ -28,7 +29,7 @@ class LoginT1Service {
         : await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => LoginT1ServiceView(
+              builder: (context) => LoginThe1Screen(
                 authorizationUrl: authorizationUrl,
                 redirectUri: redirectUri,
                 titleAppbar: titleAppbar,
