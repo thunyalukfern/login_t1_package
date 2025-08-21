@@ -36,6 +36,7 @@ class _LoginThe1ScreenState extends State<LoginThe1Screen> {
         child: Stack(
           children: [
             InAppWebView(
+              initialSettings: InAppWebViewSettings(sharedCookiesEnabled: true),
               initialUrlRequest: URLRequest(
                 url: WebUri(widget.authorizationUrl),
               ),
