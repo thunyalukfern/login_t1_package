@@ -36,17 +36,22 @@ class _LoginThe1ScreenState extends State<LoginThe1Screen> {
         child: Stack(
           children: [
             InAppWebView(
-              initialSettings: InAppWebViewSettings(sharedCookiesEnabled: true),
-              initialUrlRequest: URLRequest(
-                url: WebUri(widget.authorizationUrl),
+              initialSettings: InAppWebViewSettings(
+                sharedCookiesEnabled: true,
+                thirdPartyCookiesEnabled: true,
+                useShouldOverrideUrlLoading: true,
               ),
-              onWebViewCreated: (controller) {
-                // เก็บ controller ไว้ใช้ เช่น reload, goBack
+              onWebViewCreated: (controller) async {
+                Future.microtask(() {
+                  controller.loadUrl(
+                    urlRequest: URLRequest(
+                      url: WebUri(widget.authorizationUrl),
+                    ),
+                  );
+                });
               },
               shouldOverrideUrlLoading: (controller, navigationAction) async {
                 var url = navigationAction.request.url.toString();
-
-                // ✅ ตรวจจับ redirect
                 if (url.startsWith(widget.redirectUri)) {
                   Navigator.pop(context, url); // ส่งค่ากลับ
                   return NavigationActionPolicy.CANCEL;
