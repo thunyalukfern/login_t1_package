@@ -16,6 +16,7 @@ class T1Widget extends StatefulWidget {
     this.widgetPath,
     this.widgetLang,
     this.loadingWidget,
+    this.widgetSize = 140,
     required this.controller,
     required this.onAuthorizationCode,
   });
@@ -26,6 +27,7 @@ class T1Widget extends StatefulWidget {
   final String? scope;
   final String? widgetLang;
   final Widget? loadingWidget;
+  final double widgetSize;
   final T1WidgetController controller;
   final Future<void> Function(String code) onAuthorizationCode;
 
@@ -114,11 +116,10 @@ class _T1WidgetState extends State<T1Widget> {
         'client_id=${widget.clientId}&'
         'response_type=code&'
         'redirect_uri=${widget.redirectUri}&'
-        'state=${widget.state}&'
         'scope=${widget.scope}&'
         'lang=${widget.widgetLang}';
     return SizedBox(
-      height: 140,
+      height: widget.widgetSize,
       child: InAppWebView(
         initialUrlRequest: URLRequest(url: WebUri.uri(Uri.parse(widgetUrl))),
         onWebViewCreated: (controller) async {
