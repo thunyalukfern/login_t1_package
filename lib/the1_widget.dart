@@ -39,6 +39,28 @@ class _T1WidgetState extends State<T1Widget> {
   InAppWebViewController? webViewController;
   String? pendingAccessToken;
 
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.attach(setAccessToken: setAccessTokenToT1Widget);
+  }
+
+  @override
+  void didUpdateWidget(covariant T1Widget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.detach();
+      widget.controller.attach(setAccessToken: setAccessTokenToT1Widget);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.detach();
+    webViewController = null;
+    super.dispose();
+  }
+
   Future<String?> authenticate(String url) async {
     String? codeAuth;
     try {
