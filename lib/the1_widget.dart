@@ -134,7 +134,7 @@ class _T1WidgetState extends State<T1Widget> {
   @override
   Widget build(BuildContext context) {
     String? widgetUrl =
-        '${widget.widgetPath}'
+        '${widget.widgetPath}?'
         'client_id=${widget.clientId}&'
         'response_type=code&'
         'redirect_uri=${widget.redirectUri}&'
