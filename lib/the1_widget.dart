@@ -146,7 +146,6 @@ class _T1WidgetState extends State<T1Widget> {
         initialUrlRequest: URLRequest(url: WebUri.uri(Uri.parse(widgetUrl))),
         onWebViewCreated: (controller) async {
           webViewController = controller;
-
           await controller.addWebMessageListener(
             WebMessageListener(
               jsObjectName: 't1psdkjs',
@@ -157,7 +156,6 @@ class _T1WidgetState extends State<T1Widget> {
                       final data = jsonDecode(message.data.toString());
                       if (data["event"] == "ready") {
                       } else if (data["event"] == "widget_size_change") {
-                      } else if (data["event"] == "widget_size_changed") {
                       } else if (data["event"] == "redirect_to_sso") {
                         var url = data["data"]["url"];
                         await authenticate(url).then((value) async {
@@ -172,6 +170,14 @@ class _T1WidgetState extends State<T1Widget> {
           );
         },
         onLoadStop: (controller, url) async {
+          await controller.evaluateJavascript(
+            source: '''
+            document.documentElement.style.backgroundColor = '#FFFFFF';
+            document.body.style.backgroundColor = '#FFFFFF';
+            document.documentElement.style.colorScheme = 'light';
+            document.body.style.fontsizes = '20px';
+            ''',
+          );
           await _sendPendingAccessToken();
         },
         onConsoleMessage: (controller, message) {
