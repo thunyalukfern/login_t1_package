@@ -140,10 +140,15 @@ class _T1WidgetState extends State<T1Widget> {
         'redirect_uri=${widget.redirectUri}&'
         'scope=${widget.scope}&'
         'lang=${widget.widgetLang}';
+    double webviewBoxHeight = widget.widgetSize;
     return SizedBox(
-      height: widget.widgetSize,
+      height: webviewBoxHeight,
       child: InAppWebView(
         initialUrlRequest: URLRequest(url: WebUri.uri(Uri.parse(widgetUrl))),
+        initialSettings: InAppWebViewSettings(
+          transparentBackground: true,
+          underPageBackgroundColor: Colors.white,
+        ),
         onWebViewCreated: (controller) async {
           webViewController = controller;
           await controller.addWebMessageListener(
@@ -156,6 +161,11 @@ class _T1WidgetState extends State<T1Widget> {
                       final data = jsonDecode(message.data.toString());
                       if (data["event"] == "ready") {
                       } else if (data["event"] == "widget_size_change") {
+                        setState(() {
+                          webviewBoxHeight = double.parse(
+                            data["data"]["height"].toString(),
+                          );
+                        });
                       } else if (data["event"] == "redirect_to_sso") {
                         var url = data["data"]["url"];
                         await authenticate(url).then((value) async {
@@ -175,7 +185,6 @@ class _T1WidgetState extends State<T1Widget> {
             document.documentElement.style.backgroundColor = '#FFFFFF';
             document.body.style.backgroundColor = '#FFFFFF';
             document.documentElement.style.colorScheme = 'light';
-            document.body.style.fontsizes = '20px';
             ''',
           );
           await _sendPendingAccessToken();
