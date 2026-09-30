@@ -19,6 +19,7 @@ class T1Widget extends StatefulWidget {
     this.widgetSize = 140,
     required this.controller,
     required this.onAuthorizationCode,
+    required this.onTokenExpired,
   });
   final String? widgetPath;
   final String? clientId;
@@ -30,6 +31,7 @@ class T1Widget extends StatefulWidget {
   final double widgetSize;
   final T1WidgetController controller;
   final Future<void> Function(String code) onAuthorizationCode;
+  final Future<void> Function() onTokenExpired;
 
   @override
   State<T1Widget> createState() => _T1WidgetState();
@@ -173,6 +175,8 @@ class _T1WidgetState extends State<T1Widget> {
                             await widget.onAuthorizationCode(value);
                           }
                         });
+                      } else if (data["event"] == "token_expired") {
+                        widget.onTokenExpired();
                       }
                     }
                   },
@@ -185,6 +189,7 @@ class _T1WidgetState extends State<T1Widget> {
             document.documentElement.style.backgroundColor = '#FFFFFF';
             document.body.style.backgroundColor = '#FFFFFF';
             document.documentElement.style.colorScheme = 'light';
+            document.documentElement.style.fontSize = '18px';
             ''',
           );
           await _sendPendingAccessToken();
