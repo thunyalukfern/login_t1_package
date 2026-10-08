@@ -1,18 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+
+export 'package:flutter_web_auth_2/flutter_web_auth_2.dart'
+    show FlutterWebAuth2Options;
 import 'package:login_t1_package/view.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+
+/// Selects how the authorization page is presented.
+enum LoginT1AuthProvider { inAppWebView, flutterWebAuth2 }
 
 class LoginT1Service {
   static Future<String?> webAuthT1({
     required String authorizationUrl,
     required String redirectUri,
-    required BuildContext context,
+    BuildContext? context,
+    LoginT1AuthProvider authProvider = LoginT1AuthProvider.inAppWebView,
+    String? callbackUrlScheme,
+    FlutterWebAuth2Options options = const FlutterWebAuth2Options(),
     String? titleAppbar,
     TextStyle? titleAppbarStyle,
     Widget? loadingWidget,
     Color? loadingColor,
     bool? isRoot,
   }) async {
+    if (authProvider == LoginT1AuthProvider.flutterWebAuth2) {
+      final scheme = callbackUrlScheme ?? Uri.parse(redirectUri).scheme;
+      if (!RegExp(r'^[a-z][a-z0-9+.-]*$').hasMatch(scheme)) {
+        throw ArgumentError.value(
+          scheme,
+          'callbackUrlScheme',
+          'Invalid scheme',
+        );
+      }
+      try {
+        return await FlutterWebAuth2.authenticate(
+          url: authorizationUrl,
+          callbackUrlScheme: scheme,
+          options: options,
+        );
+      } on PlatformException catch (error) {
+        if (error.code == 'CANCELED') return null;
+        rethrow;
+      }
+    }
+    if (context == null) {
+      throw ArgumentError(
+        'context is required for inAppWebView authentication',
+      );
+    }
     var result = isRoot == true
         ? await Navigator.of(context, rootNavigator: isRoot ?? false).push(
             MaterialPageRoute(

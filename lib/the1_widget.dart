@@ -16,6 +16,9 @@ class T1Widget extends StatefulWidget {
     this.widgetPath,
     this.widgetLang,
     this.loadingWidget,
+    this.authProvider = LoginT1AuthProvider.inAppWebView,
+    this.callbackUrlScheme,
+    this.authOptions = const FlutterWebAuth2Options(),
     this.widgetSize = 140,
     required this.controller,
     required this.onAuthorizationCode,
@@ -28,6 +31,9 @@ class T1Widget extends StatefulWidget {
   final String? scope;
   final String? widgetLang;
   final Widget? loadingWidget;
+  final LoginT1AuthProvider authProvider;
+  final String? callbackUrlScheme;
+  final FlutterWebAuth2Options authOptions;
   final double widgetSize;
   final T1WidgetController controller;
   final Future<void> Function(String code) onAuthorizationCode;
@@ -40,16 +46,22 @@ class T1Widget extends StatefulWidget {
 class _T1WidgetState extends State<T1Widget> {
   InAppWebViewController? webViewController;
   String? pendingAccessToken;
+  late double _webviewBoxHeight;
+  bool _isSdkReady = false;
 
   @override
   void initState() {
     super.initState();
+    _webviewBoxHeight = widget.widgetSize;
     widget.controller.attach(setAccessToken: setAccessTokenToT1Widget);
   }
 
   @override
   void didUpdateWidget(covariant T1Widget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.widgetSize != widget.widgetSize) {
+      _webviewBoxHeight = widget.widgetSize;
+    }
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.detach();
       widget.controller.attach(setAccessToken: setAccessTokenToT1Widget);
@@ -66,16 +78,20 @@ class _T1WidgetState extends State<T1Widget> {
   Future<String?> authenticate(String url) async {
     String? codeAuth;
     try {
-      if ([
-        TargetPlatform.iOS,
-        TargetPlatform.macOS,
-        TargetPlatform.android,
-      ].contains(defaultTargetPlatform)) {
+      if (widget.authProvider == LoginT1AuthProvider.flutterWebAuth2 ||
+          [
+            TargetPlatform.iOS,
+            TargetPlatform.macOS,
+            TargetPlatform.android,
+          ].contains(defaultTargetPlatform)) {
         final result = await LoginT1Service.webAuthT1(
           authorizationUrl: url,
           redirectUri: widget.redirectUri ?? '',
           context: context,
           loadingWidget: widget.loadingWidget,
+          authProvider: widget.authProvider,
+          callbackUrlScheme: widget.callbackUrlScheme,
+          options: widget.authOptions,
         );
         codeAuth = Uri.parse(result ?? '').queryParameters['code'];
         return codeAuth;
@@ -83,14 +99,14 @@ class _T1WidgetState extends State<T1Widget> {
         throw Exception("Platform not support!");
       }
     } catch (e) {
-      print("authenticate error: $e");
+      debugPrint('authenticate error: $e');
     }
     return null;
   }
 
   Future<void> setAccessTokenToT1Widget(String accessToken) async {
     final controller = webViewController;
-    if (controller == null) {
+    if (controller == null || !_isSdkReady) {
       pendingAccessToken = accessToken;
       return;
     }
@@ -108,16 +124,13 @@ class _T1WidgetState extends State<T1Widget> {
     await controller.evaluateJavascript(
       source: 'T1PSDK.setAccessToken(${jsonEncode(accessToken)})',
     );
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   Future<void> _sendPendingAccessToken() async {
     final controller = webViewController;
     final accessToken = pendingAccessToken;
 
-    if (controller == null || accessToken == null) {
+    if (controller == null || accessToken == null || !_isSdkReady) {
       return;
     }
 
@@ -135,18 +148,22 @@ class _T1WidgetState extends State<T1Widget> {
 
   @override
   Widget build(BuildContext context) {
-    String? widgetUrl =
-        '${widget.widgetPath}?'
-        'client_id=${widget.clientId}&'
-        'response_type=code&'
-        'redirect_uri=${widget.redirectUri}&'
-        'scope=${widget.scope}&'
-        'lang=${widget.widgetLang}';
-    double webviewBoxHeight = widget.widgetSize;
+    final baseUri = Uri.parse(widget.widgetPath ?? '');
+    final widgetUri = baseUri.replace(
+      queryParameters: {
+        ...baseUri.queryParameters,
+        'response_type': 'code',
+        if (widget.clientId != null) 'client_id': widget.clientId!,
+        if (widget.redirectUri != null) 'redirect_uri': widget.redirectUri!,
+        if (widget.scope != null) 'scope': widget.scope!,
+        if (widget.widgetLang != null) 'lang': widget.widgetLang!,
+        if (widget.state != null) 'state': widget.state!,
+      },
+    );
     return SizedBox(
-      height: webviewBoxHeight,
+      height: _webviewBoxHeight,
       child: InAppWebView(
-        initialUrlRequest: URLRequest(url: WebUri.uri(Uri.parse(widgetUrl))),
+        initialUrlRequest: URLRequest(url: WebUri.uri(widgetUri)),
         initialSettings: InAppWebViewSettings(
           transparentBackground: true,
           underPageBackgroundColor: Colors.white,
@@ -158,26 +175,53 @@ class _T1WidgetState extends State<T1Widget> {
               jsObjectName: 't1psdkjs',
               onPostMessage:
                   (message, sourceOrigin, isMainFrame, replyProxy) async {
-                    debugPrint('[T1 Widget] message: ${message?.data}');
-                    if (message != null) {
-                      final data = jsonDecode(message.data.toString());
-                      if (data["event"] == "ready") {
-                      } else if (data["event"] == "widget_size_change") {
-                        setState(() {
-                          webviewBoxHeight = double.parse(
-                            data["data"]["height"].toString(),
-                          );
-                        });
-                      } else if (data["event"] == "redirect_to_sso") {
-                        var url = data["data"]["url"];
-                        await authenticate(url).then((value) async {
-                          if (value != null) {
-                            await widget.onAuthorizationCode(value);
+                    final expectedOrigin = Uri.tryParse(widgetUri.origin);
+                    final messageOrigin = Uri.tryParse(sourceOrigin.toString());
+                    if (!isMainFrame ||
+                        expectedOrigin == null ||
+                        messageOrigin == null ||
+                        messageOrigin.origin != expectedOrigin.origin ||
+                        message == null) {
+                      return;
+                    }
+
+                    try {
+                      final decoded = jsonDecode(message.data.toString());
+                      if (decoded is! Map<String, dynamic>) return;
+                      final data = decoded['data'];
+
+                      switch (decoded['event']) {
+                        case 'ready':
+                          _isSdkReady = true;
+                          await _sendPendingAccessToken();
+                        case 'widget_size_change':
+                          if (data is Map) {
+                            final height = double.tryParse(
+                              data['height'].toString(),
+                            );
+                            if (height != null &&
+                                height.isFinite &&
+                                height > 0) {
+                              setState(() => _webviewBoxHeight = height);
+                            }
                           }
-                        });
-                      } else if (data["event"] == "token_expired") {
-                        widget.onTokenExpired();
+                        case 'redirect_to_sso':
+                          if (data is Map && data['url'] is String) {
+                            final authUri = Uri.tryParse(data['url'] as String);
+                            if (authUri?.scheme == 'https') {
+                              final code = await authenticate(
+                                authUri.toString(),
+                              );
+                              if (code != null) {
+                                await widget.onAuthorizationCode(code);
+                              }
+                            }
+                          }
+                        case 'token_expired':
+                          await widget.onTokenExpired();
                       }
+                    } catch (error) {
+                      debugPrint('[T1 Widget] invalid message: $error');
                     }
                   },
             ),
@@ -193,6 +237,9 @@ class _T1WidgetState extends State<T1Widget> {
             ''',
           );
           await _sendPendingAccessToken();
+        },
+        onLoadStart: (controller, url) {
+          _isSdkReady = false;
         },
         onConsoleMessage: (controller, message) {
           debugPrint(
