@@ -48,6 +48,7 @@ class _T1WidgetState extends State<T1Widget> {
   String? pendingAccessToken;
   late double _webviewBoxHeight;
   bool _isSdkReady = false;
+  bool _pageLoaded = false;
 
   @override
   void initState() {
@@ -106,7 +107,7 @@ class _T1WidgetState extends State<T1Widget> {
 
   Future<void> setAccessTokenToT1Widget(String accessToken) async {
     final controller = webViewController;
-    if (controller == null || !_isSdkReady) {
+    if (controller == null || !_isSdkReady || !_pageLoaded) {
       pendingAccessToken = accessToken;
       return;
     }
@@ -130,7 +131,10 @@ class _T1WidgetState extends State<T1Widget> {
     final controller = webViewController;
     final accessToken = pendingAccessToken;
 
-    if (controller == null || accessToken == null || !_isSdkReady) {
+    if (controller == null ||
+        accessToken == null ||
+        !_isSdkReady ||
+        !_pageLoaded) {
       return;
     }
 
@@ -163,18 +167,33 @@ class _T1WidgetState extends State<T1Widget> {
     return SizedBox(
       height: _webviewBoxHeight,
       child: InAppWebView(
-        initialUrlRequest: URLRequest(url: WebUri.uri(widgetUri)),
+        // Android injects WebMessageListener objects into subsequent navigations.
+        // Delay the first navigation until the listener has been registered.
+        initialUrlRequest: defaultTargetPlatform == TargetPlatform.android
+            ? null
+            : URLRequest(url: WebUri.uri(widgetUri)),
         initialSettings: InAppWebViewSettings(
           transparentBackground: true,
           underPageBackgroundColor: Colors.white,
         ),
         onWebViewCreated: (controller) async {
           webViewController = controller;
+          if (defaultTargetPlatform == TargetPlatform.android &&
+              !await WebViewFeature.isFeatureSupported(
+                WebViewFeature.WEB_MESSAGE_LISTENER,
+              )) {
+            debugPrint(
+              '[T1 Widget] WebMessageListener unsupported; update Android System WebView.',
+            );
+            return;
+          }
+          if (!mounted) return;
           await controller.addWebMessageListener(
             WebMessageListener(
               jsObjectName: 't1psdkjs',
               onPostMessage:
                   (message, sourceOrigin, isMainFrame, replyProxy) async {
+                    if (!mounted) return;
                     final expectedOrigin = Uri.tryParse(widgetUri.origin);
                     final messageOrigin = Uri.tryParse(sourceOrigin.toString());
                     if (!isMainFrame ||
@@ -212,7 +231,7 @@ class _T1WidgetState extends State<T1Widget> {
                               final code = await authenticate(
                                 authUri.toString(),
                               );
-                              if (code != null) {
+                              if (mounted && code != null) {
                                 await widget.onAuthorizationCode(code);
                               }
                             }
@@ -226,6 +245,16 @@ class _T1WidgetState extends State<T1Widget> {
                   },
             ),
           );
+          if (!mounted) return;
+          if (defaultTargetPlatform == TargetPlatform.android) {
+            await controller.loadUrl(
+              urlRequest: URLRequest(url: WebUri.uri(widgetUri)),
+            );
+          }
+        },
+        onLoadStart: (controller, url) {
+          _pageLoaded = false;
+          _isSdkReady = false;
         },
         onLoadStop: (controller, url) async {
           await controller.evaluateJavascript(
@@ -236,10 +265,9 @@ class _T1WidgetState extends State<T1Widget> {
             document.documentElement.style.fontSize = '18px';
             ''',
           );
+          if (!mounted) return;
+          _pageLoaded = true;
           await _sendPendingAccessToken();
-        },
-        onLoadStart: (controller, url) {
-          _isSdkReady = false;
         },
         onConsoleMessage: (controller, message) {
           debugPrint(
