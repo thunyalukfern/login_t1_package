@@ -213,7 +213,6 @@ class _T1WidgetState extends State<T1Widget> {
             document.documentElement.style.backgroundColor = '#FFFFFF';
             document.body.style.backgroundColor = '#FFFFFF';
             document.documentElement.style.colorScheme = 'light';
-            document.documentElement.style.fontSize = '18px';
             ''',
           );
           if (!mounted) return;
