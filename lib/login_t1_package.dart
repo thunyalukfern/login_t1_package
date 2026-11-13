@@ -11,8 +11,6 @@ class LoginT1Service {
     TextStyle? titleAppbarStyle,
     Widget? loadingWidget,
     Color? loadingColor,
-    Widget? callbackLoadingWidget,
-    Future<void> Function(String url)? onRedirect,
     bool? isRoot,
   }) async {
     var result = isRoot == true
@@ -25,8 +23,6 @@ class LoginT1Service {
                 titleAppbarStyle: titleAppbarStyle,
                 loadingColor: loadingColor,
                 loadingWidget: loadingWidget,
-                callbackLoadingWidget: callbackLoadingWidget,
-                onRedirect: onRedirect,
               ),
             ),
           )
@@ -40,8 +36,6 @@ class LoginT1Service {
                 titleAppbarStyle: titleAppbarStyle,
                 loadingColor: loadingColor,
                 loadingWidget: loadingWidget,
-                callbackLoadingWidget: callbackLoadingWidget,
-                onRedirect: onRedirect,
               ),
             ),
           );

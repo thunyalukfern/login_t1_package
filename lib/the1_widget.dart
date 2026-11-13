@@ -16,7 +16,6 @@ class T1Widget extends StatefulWidget {
     this.widgetPath,
     this.widgetLang,
     this.loadingWidget,
-    this.callbackLoadingWidget,
     this.widgetSize = 140,
     required this.controller,
     required this.onAuthorizationCode,
@@ -29,10 +28,6 @@ class T1Widget extends StatefulWidget {
   final String? scope;
   final String? widgetLang;
   final Widget? loadingWidget;
-
-  /// Loading shown on the login screen while [onAuthorizationCode] is running.
-  /// Falls back to [loadingWidget].
-  final Widget? callbackLoadingWidget;
   final double widgetSize;
   final T1WidgetController controller;
   final Future<void> Function(String code) onAuthorizationCode;
@@ -69,32 +64,29 @@ class _T1WidgetState extends State<T1Widget> {
     super.dispose();
   }
 
-  Future<void> authenticate(String url) async {
+  Future<String?> authenticate(String url) async {
+    String? codeAuth;
     try {
       if ([
         TargetPlatform.iOS,
         TargetPlatform.macOS,
         TargetPlatform.android,
       ].contains(defaultTargetPlatform)) {
-        await LoginT1Service.webAuthT1(
+        final result = await LoginT1Service.webAuthT1(
           authorizationUrl: url,
           redirectUri: widget.redirectUri ?? '',
           context: context,
           loadingWidget: widget.loadingWidget,
-          callbackLoadingWidget: widget.callbackLoadingWidget,
-          onRedirect: (redirectUrl) async {
-            final code = Uri.parse(redirectUrl).queryParameters['code'];
-            if (code != null) {
-              await widget.onAuthorizationCode(code);
-            }
-          },
         );
+        codeAuth = Uri.parse(result ?? '').queryParameters['code'];
+        return codeAuth;
       } else {
         throw Exception("Platform not support!");
       }
     } catch (e) {
       debugPrint('[T1 Widget] authentication failed (${e.runtimeType})');
     }
+    return null;
   }
 
   Future<void> setAccessTokenToT1Widget(String accessToken) async {
@@ -193,7 +185,11 @@ class _T1WidgetState extends State<T1Widget> {
                         });
                       } else if (data["event"] == "redirect_to_sso") {
                         var url = data["data"]["url"];
-                        await authenticate(url);
+                        await authenticate(url).then((value) async {
+                          if (value != null) {
+                            await widget.onAuthorizationCode(value);
+                          }
+                        });
                       } else if (data["event"] == "token_expired") {
                         widget.onTokenExpired();
                       }
