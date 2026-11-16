@@ -37,6 +37,17 @@ class _LoginThe1ScreenState extends State<LoginThe1Screen> {
   final ValueNotifier<bool> _callbackLoadingNotifier = ValueNotifier(false);
   bool _redirectHandled = false;
 
+  /// true หลังหน้า login โหลดเสร็จครั้งแรก
+  /// การนำทางหลังจากนี้ (เช่น กด submit ล็อกอิน) จะแสดง callbackLoadingWidget แทน loadingWidget
+  bool _initialLoadDone = false;
+
+  bool _isBlank(WebUri? url) => url == null || url.toString() == 'about:blank';
+
+  /// ปิด callback loading ถ้าการนำทางจบลงโดยไม่ได้ redirect (เช่น รหัสผิด / โหลด error)
+  void _resetCallbackLoadingIfNotRedirected() {
+    if (!_redirectHandled) _callbackLoadingNotifier.value = false;
+  }
+
   @override
   void dispose() {
     _loadingNotifier.dispose();
@@ -111,12 +122,34 @@ class _LoginThe1ScreenState extends State<LoginThe1Screen> {
                 );
               },
               onLoadStart: (controller, url) {
-                _loadingNotifier.value = true;
+                if (_isBlank(url)) return;
+                if (_initialLoadDone) {
+                  // หลังกดล็อกอิน: ใช้ callback loading
+                  _callbackLoadingNotifier.value = true;
+                } else {
+                  _loadingNotifier.value = true;
+                }
               },
               onLoadStop: (controller, url) async {
-                _loadingNotifier.value = false;
+                if (_isBlank(url)) return;
+                if (_initialLoadDone) {
+                  _resetCallbackLoadingIfNotRedirected();
+                } else {
+                  _initialLoadDone = true;
+                  _loadingNotifier.value = false;
+                }
+              },
+              onReceivedError: (controller, request, error) {
+                if (request.isForMainFrame == false) return;
+                if (_initialLoadDone) {
+                  _resetCallbackLoadingIfNotRedirected();
+                } else {
+                  _loadingNotifier.value = false;
+                }
               },
               onProgressChanged: (controller, progress) {
+                // คุม loading เฉพาะตอนโหลดหน้าแรก
+                if (_initialLoadDone) return;
                 _loadingNotifier.value = progress < 100;
               },
             ),
