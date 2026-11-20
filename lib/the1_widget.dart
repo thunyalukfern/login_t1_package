@@ -21,6 +21,7 @@ class T1Widget extends StatefulWidget {
     required this.controller,
     required this.onAuthorizationCode,
     required this.onTokenExpired,
+    required this.urlIdentityThe1,
   });
   final String? widgetPath;
   final String? clientId;
@@ -29,13 +30,15 @@ class T1Widget extends StatefulWidget {
   final String? scope;
   final String? widgetLang;
   final Widget? loadingWidget;
+  final String urlIdentityThe1;
 
   /// Loading shown on the login screen while [onAuthorizationCode] is running.
   /// Falls back to [loadingWidget].
   final Widget? callbackLoadingWidget;
   final double widgetSize;
   final T1WidgetController controller;
-  final Future<void> Function(String code) onAuthorizationCode;
+  final Future<void> Function(String code, String consentUrl)
+  onAuthorizationCode;
   final Future<void> Function() onTokenExpired;
 
   @override
@@ -85,7 +88,16 @@ class _T1WidgetState extends State<T1Widget> {
           onRedirect: (redirectUrl) async {
             final code = Uri.parse(redirectUrl).queryParameters['code'];
             if (code != null) {
-              await widget.onAuthorizationCode(code);
+              String consentUrl =
+                  '${widget.urlIdentityThe1}/auth?'
+                  'client_id=${widget.clientId}&'
+                  'response_type=code&'
+                  'redirect_uri=${widget.redirectUri}://t1callback&'
+                  'state=$code&'
+                  'scope=openid&'
+                  '%20offline_access&'
+                  'migrate=done';
+              await widget.onAuthorizationCode(code, consentUrl);
             }
           },
         );
