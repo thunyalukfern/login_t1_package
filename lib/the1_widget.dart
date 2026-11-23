@@ -92,7 +92,7 @@ class _T1WidgetState extends State<T1Widget> {
                   '${widget.urlIdentityThe1}/auth?'
                   'client_id=${widget.clientId}&'
                   'response_type=code&'
-                  'redirect_uri=${widget.redirectUri}&'
+                  'redirect_uri=${widget.redirectUri}/consent&'
                   'state=$code&'
                   'scope=openid&'
                   '%20offline_access&'
