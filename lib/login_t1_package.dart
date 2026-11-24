@@ -35,8 +35,9 @@ class LoginT1Service {
           'Invalid scheme',
         );
       }
+      final String redirectUrl;
       try {
-        return await FlutterWebAuth2.authenticate(
+        redirectUrl = await FlutterWebAuth2.authenticate(
           url: authorizationUrl,
           callbackUrlScheme: scheme,
           options: options,
@@ -45,6 +46,9 @@ class LoginT1Service {
         if (error.code == 'CANCELED') return null;
         rethrow;
       }
+      // debugPrint('[The1Wdiget]$redirectUrl');
+      await onRedirect?.call(redirectUrl);
+      return redirectUrl;
     }
     if (context == null) {
       throw ArgumentError(
